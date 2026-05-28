@@ -1,0 +1,15 @@
+# Large data (regenerable from preprocessing)
+workshop_data/
+pbmc_10k_multiome_workshop.h5mu
+
+# Rendered executed-notebook copies
+*.executed.ipynb
+
+# Jupyter / Python / macOS noise
+.ipynb_checkpoints/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Claude Code session state
+.claude/
