@@ -5,11 +5,12 @@ pbmc_10k_multiome_workshop.h5mu
 # Rendered executed-notebook copies
 *.executed.ipynb
 
-# Jupyter / Python / macOS noise
+# Jupyter / Python / macOS / Office noise
 .ipynb_checkpoints/
 __pycache__/
 *.pyc
 .DS_Store
+~$*
 
 # Claude Code session state
 .claude/

@@ -1,88 +1,91 @@
 # Workshop Setup Guide
 
-Read this **before** the workshop. The setup itself is fast (~5 minutes), but the data download (a few hundred MB) takes a few minutes on Colab — don't leave it for the start.
+Read this **before** the workshop. The notebook runs in Google Colab — no
+local install needed. Two clicks and a short download and you're ready.
 
 ## What you need
 
 - A **Google account** (for Colab).
-- A laptop with browser + reasonable internet.
-- (Optional) An **AlphaGenome API key** — free, takes ~1 minute to get. See below.
+- A laptop with a browser and reasonable internet.
+- *(Optional)* An **AlphaGenome API key** — free, ~1 min to get. With a key
+  Part 4 queries AlphaGenome live for any gene you re-target. Without one
+  you still get the workshop's featured example (MS4A1) from a baked cache.
 
-You do **not** need a GPU, a local Python environment, or any genomics tools installed locally. Everything runs in Colab.
+You do **not** need a GPU, a local Python install, or any genomics tools.
 
 ## Step 1 — open the notebook in Colab
 
 Click here:
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/USER/REPO/blob/main/workshop_multiomics_integration.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration.ipynb)
 
-> *(Instructor: replace `USER/REPO` with your GitHub repo before sending this link.)*
+> *(Instructor: replace `nchernia/festival-multiomics-workshop` with your GitHub repo before sending this link.)*
 
-When prompted, sign in with Google and accept the "from GitHub" runtime warning.
+Sign in with Google and accept the "from GitHub" runtime warning.
 
 ## Step 2 — confirm the runtime
 
-In Colab: **Runtime → Change runtime type → Hardware accelerator: CPU** (the default is fine; we don't need a GPU). Click **Connect** in the top-right.
+In Colab: **Runtime → Change runtime type → Hardware accelerator: CPU** (the
+default is fine; we don't need a GPU). Click **Connect** in the top-right.
 
-## Step 3 — install dependencies
+## Step 3 — run all cells
 
-Run **cell 1** (`%%capture\n!pip install -q ...`). Takes ~2 minutes. You'll see no output — that's expected (`%%capture` hides it). When the cell finishes (green checkmark), move on.
+**Runtime → Run all.**
 
-If the install fails, restart the runtime (**Runtime → Restart runtime**) and re-run cell 1.
+- The first cell installs dependencies (`%%capture` hides the output — that's
+  expected; a green checkmark when it finishes is what to look for).
+- The load-data cell downloads `pbmc_10k_multiome_workshop.h5mu` (~900 MB)
+  from the workshop's public URL. Takes 1–3 minutes on a typical connection.
+- Everything after that runs in seconds — the IGV browser tracks stream by
+  range request, the AlphaGenome panel reads precomputed predictions.
 
-## Step 4 — set the data URL
+Total runtime: ~5–10 minutes.
 
-Cell 3 downloads the workshop data file (a few hundred MB). Before running it, set the data URL.
+## (Optional) AlphaGenome API key for live re-targeting
 
-In a Colab cell **above** cell 3 (or right at the top), run:
-
-```python
-import os
-os.environ["DATA_URL"] = "https://storage.googleapis.com/<bucket>/<path>/pbmc_10k_multiome_workshop.h5mu"
-```
-
-> *(Instructor: provide the actual URL.)*
-
-Then run cell 3. The download takes 1–3 minutes depending on your connection. You'll see "Downloading from ... Done!" when it's finished.
-
-## Step 5 (optional) — get an AlphaGenome API key
-
-Without a key, **the notebook still runs end-to-end** — Part 3 uses pre-computed predictions baked into the data file. With a key, Part 3 runs **live** against AlphaGenome's servers.
+Without a key, Part 4 (which TF binds the enhancer) shows precomputed
+predictions for the featured MS4A1 enhancer. With a key, you can change the
+gene at the top of Part 3 and re-run — the AlphaGenome panel queries live
+for the new peak.
 
 To get a key:
 
-1. Go to <https://deepmind.google.com/science/alphagenome>
-2. Click "Get API access" / "Try the API" and follow the form.
-3. Free for academic / non-commercial use; takes ~1 minute.
+1. Go to <https://deepmind.google.com/science/alphagenome>.
+2. Click "Get API access" / "Try the API" and fill in the (~1-min) form.
+3. Free for academic / non-commercial use.
 
 Once you have a key, in Colab:
 
-1. Click the **🔑 key icon** in the left sidebar.
+1. Click the 🔑 **key icon** in the left sidebar.
 2. Click **+ Add new secret**.
 3. Name: `ALPHA_GENOME_API_KEY`. Value: paste your key.
 4. Toggle **Notebook access**: ON.
 
-The Part 3 setup cell will detect it automatically and switch to the live API path.
-
-## Step 6 — run the notebook
-
-Use **Runtime → Run all** for the full sweep, or step through cell-by-cell with **Shift+Enter** to follow along.
-
-Total runtime: ~5–10 minutes for all cells (most of that is the data download in cell 3 and the dotplot rendering).
+The AlphaGenome cell detects it automatically.
 
 ## Troubleshooting
 
-**"No module named 'muon'" / similar import errors after restart**
-→ Re-run cell 1. Restarting the runtime wipes installed packages; you have to reinstall.
+**`No module named 'muon'`** (or similar) after a restart
+→ Re-run the install cell. Restarting the runtime wipes installed packages.
 
-**Cell 3 fails with `FileNotFoundError`**
-→ You haven't set `DATA_URL` and the file isn't in the working directory. Set the env var as in Step 4.
+**The data download stalls or fails**
+→ Restart the runtime and try the load cell again; the workshop file is on
+public GCS so transient network issues are usually all it is.
 
-**Part 3 raises `RuntimeError: No API key AND no cached AlphaGenome data`**
-→ You're using a `.h5mu` that wasn't preprocessed with the cache step, *and* you don't have an API key. Either ask the instructor for the cached version, or set up an AlphaGenome key (Step 5).
+**The IGV browser shows tracks but nothing displays**
+→ Trust the notebook (Colab will prompt) and try again. The IGV widget
+loads bigWigs by URL with range requests; if it still fails, flag the
+instructor.
+
+**Part 4 (AlphaGenome) raises a missing-cache error**
+→ You're running a notebook that wasn't preprocessed with the cache step
+*and* you don't have an API key. Either ask the instructor for the cached
+version of the `.h5mu`, or set up an AlphaGenome key (above).
 
 **Out of RAM**
-→ The default Colab tier has 12 GB RAM, which is enough. If you somehow hit a limit (e.g. you have many other notebooks open), close them and restart the runtime.
+→ The free Colab tier has 12 GB which is enough. If you somehow hit a limit,
+close other notebooks and restart.
 
 **Anything else**
-→ Flag the instructor. Keep going on the parts that work; partial completion is fine.
+→ Flag the instructor. Keep going on the parts that work; partial
+completion is fine.
