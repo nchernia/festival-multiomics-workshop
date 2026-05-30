@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Refresh the AlphaGenome cache in the workshop .h5mu for the CD8A enhancer.
+"""Refresh the AlphaGenome cache in the workshop .h5mu for the MS4A1 enhancer.
 
-Computes the featured CD8A peak the same way the notebook does (paired
+Computes the featured MS4A1 peak the same way the notebook does (paired
 correlation over a ±250 kb TSS window), then caches AlphaGenome CHIP-TF
-predictions (RUNX/ETS T-cell factors) for it. No GLUE retrain.
+predictions for it. Dedupes one row per TF (strongest biosample by max
+signal in the enhancer ±2 kb), matching the live code path in the notebook.
 
 Run:
-    ALPHA_GENOME_API_KEY=<key> python preprocessing/refresh_alphagenome_cd8a.py \
+    ALPHA_GENOME_API_KEY=<key> python preprocessing/refresh_alphagenome.py \
         --h5mu workshop_data/pbmc_10k_multiome_workshop.h5mu
 """
 import argparse, os, re, sys
@@ -19,10 +20,22 @@ import muon as mu
 
 GENE = "MS4A1"
 WINDOW = 250_000
-TARGET_TFS = ["EBF1","PAX5","SPIB","TCF3","POU2F2","SPI1","IRF8"]
-# CHIP-TF biosamples to request: K562 + GM12878 (lymphoblastoid) have the
-# broadest ENCODE TF ChIP coverage; add CD8/CD4 T-cell terms in case present.
-BIOSAMPLES = ["EFO:0002784", "EFO:0002067", "CL:0000236"]  # GM12878, K562, B cell
+# TF panel matches the notebook's v2 live code path.
+TARGET_TFS = ["EBF1","PAX5","SPIB","TCF3","POU2F2","SPI1","CEBPA","CEBPB","IRF8",
+              "RUNX3","ETS1","TBX21","EOMES","TCF7","LEF1","GATA3","BCL11A","CTCF"]
+# Primary PBMC immune-cell ontology terms. Preferred over cell lines (GM12878,
+# K562) for PBMC interpretation — predictions come back conditioned on the
+# right lineage. Add "EFO:0002784" (GM12878) as a fallback for high-coverage
+# B-cell ChIP-TF if a TF lacks primary-cell training data.
+BIOSAMPLES = [
+    "CL:0000236",   # B cell
+    "CL:0000623",   # natural killer cell
+    "CL:0000624",   # CD4-positive, alpha-beta T cell
+    "CL:0000625",   # CD8-positive, alpha-beta T cell
+    "CL:0000576",   # monocyte
+    "CL:0001054",   # CD14-positive monocyte
+    "CL:0000451",   # dendritic cell
+]
 
 
 def dense(ad, name):
@@ -85,24 +98,46 @@ def main():
     context_iv = peak_iv.resize(dna_client.SEQUENCE_LENGTH_1MB)
 
     print(f"predict_interval(CHIP_TF) at {context_iv} ...")
-    out = model.predict_interval(
-        interval=context_iv,
-        requested_outputs=[dna_client.OutputType.CHIP_TF],
-        ontology_terms=BIOSAMPLES,
-    )
+    # Some CL/EFO terms are not in AlphaGenome's vocabulary -- drop and retry on error.
+    terms = list(BIOSAMPLES)
+    while True:
+        try:
+            out = model.predict_interval(
+                interval=context_iv,
+                requested_outputs=[dna_client.OutputType.CHIP_TF],
+                ontology_terms=terms,
+            )
+            break
+        except Exception as exc:
+            mt = re.search(r'Unsupported ontology: "([^"]+)"', str(exc))
+            if not mt or not terms:
+                raise
+            bad = mt.group(1)
+            print(f"  AlphaGenome does not support {bad}; dropping and retrying.")
+            terms = [t for t in terms if t != bad]
+    print(f"  biosamples used: {terms}")
     tf_pred = out.chip_tf
     tf_md = tf_pred.metadata
 
-    # Which of our target TFs actually have tracks?
-    keep_idx, kept = [], []
-    str_cols = tf_md.select_dtypes(include="object")
-    for tf in TARGET_TFS:
-        mask = str_cols.apply(lambda c: c.str.upper().str.contains(tf, na=False)).any(axis=1)
-        hits = np.where(mask.values)[0]
-        if len(hits):
-            keep_idx.append(int(hits[0])); kept.append(tf)
-    keep_idx = sorted(set(keep_idx))
-    print(f"Found {len(kept)} target TF tracks: {kept}  (of {len(tf_md)} total CHIP-TF tracks)")
+    # Dedupe per TF: for each TF in the panel that has any returned tracks, keep
+    # the (TF, biosample) row whose max signal inside the enhancer ±2 kb is highest.
+    # Matches the notebook's load_ag_live dedup so cache and live agree.
+    tf_names = tf_md["transcription_factor"].astype(str).values
+    pos_ctx = np.linspace(int(context_iv.start), int(context_iv.end), tf_pred.values.shape[0])
+    win_mask = (pos_ctx >= start - 2000) & (pos_ctx <= end + 2000)
+    sig_per_row = tf_pred.values[win_mask].max(axis=0)
+    best = {}                                       # TF -> (row_index, signal)
+    for i, t in enumerate(tf_names):
+        if t not in TARGET_TFS:
+            continue
+        if t not in best or sig_per_row[i] > best[t][1]:
+            best[t] = (int(i), float(sig_per_row[i]))
+    # Sort TFs by descending signal for stable, readable order.
+    items = sorted(best.items(), key=lambda kv: -kv[1][1])
+    keep_idx = [v[1][0] for v in items]
+    kept     = [k for k, _ in items]
+    print(f"Found {len(kept)} target TF tracks (deduped, by strongest biosample): {kept}")
+    print(f"  (out of {len(tf_md)} total CHIP-TF tracks the model returned)")
     if not kept:
         print("None of the target TFs found. First 30 available TF track names:")
         print(list(tf_md.iloc[:30, 0]))
