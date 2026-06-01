@@ -23,10 +23,11 @@ WINDOW = 250_000
 # TF panel matches the notebook's v2 live code path.
 TARGET_TFS = ["EBF1","PAX5","SPIB","TCF3","POU2F2","SPI1","CEBPA","CEBPB","IRF8",
               "RUNX3","ETS1","TBX21","EOMES","TCF7","LEF1","GATA3","BCL11A","CTCF"]
-# Primary PBMC immune-cell ontology terms. Preferred over cell lines (GM12878,
-# K562) for PBMC interpretation — predictions come back conditioned on the
-# right lineage. Add "EFO:0002784" (GM12878) as a fallback for high-coverage
-# B-cell ChIP-TF if a TF lacks primary-cell training data.
+# Primary PBMC immune-cell ontology terms PLUS GM12878 as a high-coverage
+# B-cell-line fallback. ENCODE's primary-immune-cell CHIP-TF data is sparse
+# (returns ~5 total tracks across all CL terms), so we need GM12878 to actually
+# get B-master TF predictions (EBF1, PAX5, SPI1, POU2F2, TCF3). Matches the
+# notebook's load_ag_live BIOSAMPLES list so cache and live tell the same story.
 BIOSAMPLES = [
     "CL:0000236",   # B cell
     "CL:0000623",   # natural killer cell
@@ -34,6 +35,7 @@ BIOSAMPLES = [
     "CL:0000625",   # CD8-positive, alpha-beta T cell
     "CL:0000576",   # monocyte
     "CL:0001054",   # CD14-positive monocyte
+    "EFO:0002784",  # GM12878 — B-lymphoblastoid line, carries B-master TF ChIP-seq
 ]
 
 
