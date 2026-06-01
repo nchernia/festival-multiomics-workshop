@@ -1,6 +1,7 @@
 # Large data (regenerable from preprocessing)
 workshop_data/
-pbmc_10k_multiome_workshop.h5mu
+*.h5mu
+*.h5mu.bak
 
 # Rendered executed-notebook copies
 *.executed.ipynb

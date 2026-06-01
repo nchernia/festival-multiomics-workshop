@@ -3,10 +3,7 @@
 Festival of Genomics workshop: integrating scRNA-seq + scATAC-seq, ~45 minutes.
 Runs entirely in **Google Colab** — no local install, no GPU.
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration.ipynb)
-
-> Replace `nchernia/festival-multiomics-workshop` in the badge above (and in the notebook header +
-> `STUDENT_SETUP.md`) with your GitHub repo path before publishing.
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration_v2.ipynb)
 
 ## What students learn
 
@@ -18,23 +15,22 @@ ArchR (`addPeak2GeneLinks`), and Seurat compute — and it's the analysis that
 
 The workshop is split into two notebooks:
 
-**`workshop_multiomics_integration.ipynb`** — the main ~45-min session:
+**`workshop_multiomics_integration_v2.ipynb`** — the main ~45-min session:
 
 | Part | Tool | Output |
 |---|---|---|
-| Intro: what a multiome experiment measures | — | Conceptual framing |
-| 1. scATAC + QC (~5 min) | snapatac2 `tsse` / `n_fragment` | ATAC UMAP by cell type, QC distributions |
-| 2. Same cells (~2 min) | RNA + ATAC UMAPs, shared labels | identity in both layers (paired data — no integration model needed) |
-| 3. Peak-to-gene (~15 min) | paired Spearman correlation | MS4A1's distal B-cell enhancer; IGV browser view of per-cell-type tracks |
-| 4. Which TF binds it (~6 min) | AlphaGenome CHIP-TF | EBF1/PAX5 (B-master TFs) predicted to bind the enhancer |
+| 1. The puzzle of gene regulation | — | Conceptual framing + the two matrices |
+| 2. Two views of the same cells | independent PCA/spectral + Leiden, shared barcodes | Cluster UMAPs (RNA + ATAC), then cell-type reveal |
+| 3. Peak-to-gene linking | paired Spearman correlation in ±250 kb window | Candidate enhancers for MS4A1, IGV view, scatter, UMAP overlay |
+| 4. Which TF binds it | AlphaGenome CHIP-TF (primary PBMC ontologies + GM12878 fallback) | B-master TFs predicted to bind |
 
 **`rna_annotation.ipynb`** — self-paced sidebar: how the RNA cell-type labels
-were derived (module scoring → hierarchical lineage → CD4/CD8 split → DEG
-validation). The main notebook consumes the result.
+were derived (module scoring → hierarchical lineage → CD4/CD8 split → plasma
+cell separation → DEG validation). The main notebook consumes the result.
 
 ## For students
 
-[Open the main notebook in Colab](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration.ipynb)
+[Open the main notebook in Colab](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration_v2.ipynb)
 and **Runtime → Run all**. Total time: ~5–10 minutes (most of it is the
 `.h5mu` download in the load cell).
 
@@ -46,14 +42,17 @@ any peak you re-target).
 
 ```
 .
-├── workshop_multiomics_integration.ipynb      ← main workshop notebook
-├── rna_annotation.ipynb                        ← self-paced cell-annotation walkthrough
+├── workshop_multiomics_integration_v2.ipynb     ← main workshop notebook
+├── workshop_multiomics_integration.ipynb        ← earlier version, kept for reference
+├── rna_annotation.ipynb                         ← self-paced cell-annotation walkthrough
+├── cell_type_scATAC.png                         ← Part 1 schematic (embedded in v2)
 ├── preprocessing/
-│   ├── preprocess_pbmc_multiome.py            ← main pipeline (heavy: download, QC, MACS3, GLUE)
-│   ├── make_pseudobulk_bigwigs.py             ← per-cell-type bigWigs for the IGV view
-│   └── refresh_alphagenome.py                 ← AlphaGenome CHIP-TF cache (needs API key)
+│   ├── preprocess_pbmc_multiome.py              ← main pipeline (download, QC, MACS3, GTF, save)
+│   ├── cleanup_h5mu.py                          ← one-shot fixer for an existing .h5mu
+│   ├── make_pseudobulk_bigwigs.py               ← per-cell-type bigWigs for the IGV view
+│   └── refresh_alphagenome.py                   ← AlphaGenome CHIP-TF cache (needs API key)
 ├── README.md
-├── STUDENT_SETUP.md                            ← pre-workshop instructions for students
+├── STUDENT_SETUP.md                             ← pre-workshop instructions for students
 └── LICENSE
 ```
 
@@ -66,25 +65,41 @@ The notebook depends on a single hosted `.h5mu` file. Generate it once with:
 
 ```bash
 cd preprocessing
-export ALPHA_GENOME_API_KEY=<your-key>
+export ALPHA_GENOME_API_KEY=<your-key>      # optional, only for the AG cache
 python preprocess_pbmc_multiome.py --output-dir ../workshop_data
 ```
 
-Pipeline: download → RNA QC/cluster → annotate → ATAC (snapatac2 QC + MACS3 per
-cell type) → GLUE joint embedding (gene coords only) → save (`gene_tss` rides
-along in `uns`) → **AlphaGenome CHIP-TF cache for the MS4A1 distal enhancer**
+Pipeline: download → RNA QC/cluster/annotate (including B-cell vs Plasma-cell
+split) → ATAC (snapatac2 QC + MACS3 per cell type) → derive per-gene TSS from
+GENCODE GTF → save → **AlphaGenome CHIP-TF cache for the MS4A1 enhancer**
 (delegated to `refresh_alphagenome.py`, runs only if `ALPHA_GENOME_API_KEY`
 is set).
 
 Costs:
 - ~200 MB 10x Genomics RNA + ATAC peak matrix download
 - ~2.5 GB 10x ATAC fragments download (needed by snapatac2 / MACS3)
-- ~3–5 hours GLUE training (`PairedSCGLUEModel`)
+- ~45–60 minutes total wall-clock (MACS3 per-cell-type is the bottleneck)
 - A few AlphaGenome API calls (~1 min)
 
-ATAC QC thresholds (in `process_atac`): ≥1000 fragments/cell, TSS enrichment
-≥7, doublets removed via snapatac2's scrublet. Changing these changes the
-cell set, so GLUE must be retrained (no `--reuse-glue`).
+ATAC QC thresholds (in `process_atac`): ≥1,000 fragments/cell, TSS enrichment
+≥7, doublets removed via snapatac2's scrublet.
+
+**Note on GLUE.** Earlier versions of this pipeline trained a GLUE model for
+joint embedding (3–5 hours). The workshop's peak-to-gene analysis is paired
+Spearman correlation in a ±250 kb candidate window — it only needs per-gene
+TSS coordinates, which the current pipeline reads directly from the GENCODE
+GTF. GLUE is no longer used.
+
+### Cleaning up an existing .h5mu (no re-preprocessing)
+
+If you already have a `.h5mu` produced by an older pipeline and just want to
+(a) split plasma cells out of the B-cell label and (b) strip GLUE residue, run:
+
+```bash
+python preprocessing/cleanup_h5mu.py --h5mu pbmc_10k_multiome_workshop.h5mu
+```
+
+~1 minute. Output overwrites the input.
 
 ### Post-steps (after the main pipeline)
 
@@ -100,13 +115,10 @@ ALPHA_GENOME_API_KEY=<key> python preprocessing/refresh_alphagenome.py \
     --h5mu workshop_data/pbmc_10k_multiome_workshop.h5mu
 ```
 
-### Hosting on GCS (one option)
+### Hosting on GCS
 
-Two things need a public, range-capable HTTPS endpoint (CORS-enabled for the
-IGV tracks):
-
-- The `.h5mu` (so students can download with `urllib`)
-- The `tracks/` bigWigs (so the IGV browser can range-fetch them)
+The `.h5mu` and the IGV bigWigs both need a public, range-capable HTTPS
+endpoint (CORS-enabled for the IGV tracks):
 
 ```bash
 BUCKET=your-bucket
@@ -130,14 +142,13 @@ echo '[{"origin":["*"],"method":["GET","HEAD"],"responseHeader":["*"],"maxAgeSec
 gcloud storage buckets update gs://$BUCKET --cors-file=/tmp/cors.json --project=$PROJ
 ```
 
-Then, in the notebook:
+In the notebook:
 
-- In the load-data cell, set `DATA_URL` to the public `.h5mu` URL by default
-  (so Colab students don't have to set anything).
-- The IGV cell already reads `TRACKS_URL` from `os.environ` with a default —
-  point that default at your public `tracks/` base URL.
+- The load-data cell already reads `DATA_URL` from `os.environ` with a public
+  default pointing at `broad-p16-calico/festival-2026/`.
+- The IGV cell reads `TRACKS_URL` the same way.
 
-The workshop's current default tracks/data live at:
+Workshop default hosting:
 
 - `.h5mu`: `https://storage.googleapis.com/broad-p16-calico/festival-2026/pbmc_10k_multiome_workshop.h5mu`
 - `tracks/`: `https://storage.googleapis.com/broad-p16-calico/festival-2026/tracks`
@@ -149,29 +160,23 @@ MuData
 ├── mod['rna']    cells × ~19k genes   (cell_type, X_pca, X_umap, leiden)
 ├── mod['atac']   cells × ~180k peaks  (cell_type, tsse, n_fragment, X_spectral, X_umap)
 └── uns
-    ├── gene_tss          — per-gene (chrom, TSS, strand) from the GTF; defines
-    │                       the ±250 kb candidate window for peak-to-gene
-    └── alphagenome_cache — CHIP-TF predictions (B-cell TFs) for the MS4A1 enhancer
+    ├── gene_tss          — per-gene (chrom, TSS, strand) from GENCODE v44;
+    │                       defines the ±250 kb candidate window for peak-to-gene
+    └── alphagenome_cache — CHIP-TF predictions for the MS4A1 enhancer (deduped
+                            to one row per TF: the biosample with the strongest
+                            predicted binding signal inside the peak ±2 kb)
 ```
+
+Cell types present in `obs['cell_type']` (both modalities, same labels):
+`B cell`, `Plasma cell`, `CD4 T cell`, `CD8 T cell`, `NK cell`, `CD14 Monocyte`,
+`CD16 Monocyte`, `Dendritic cell`.
 
 The notebook computes peak-to-gene links via paired Spearman correlation
 (peak accessibility vs gene expression across cells), over peaks in a
-±250 kb window around each gene's TSS (`gene_tss`). No GLUE involved — the
-GLUE step in preprocessing now only supplies gene coordinates; its embedding
-is unused.
+±250 kb window around each gene's TSS (`gene_tss`).
 
 Raw counts are dropped from the saved file (saves ~1 GB; not used by the
 notebook).
-
-### Iteration
-
-If you tweak something and need to re-run preprocessing:
-
-```bash
-python preprocess_pbmc_multiome.py --output-dir ../workshop_data --reuse-glue
-python preprocess_pbmc_multiome.py --output-dir ../workshop_data \
-    --skip-glue --skip-alphagenome    # smoke-test ATAC + MACS3 only
-```
 
 ## License
 

@@ -3,7 +3,7 @@
 
 Computes the featured MS4A1 peak the same way the notebook does (paired
 correlation over a ±250 kb TSS window), then caches AlphaGenome CHIP-TF
-predictions for it. Dedupes one row per TF (strongest biosample by max
+predictions for it. Dedups one row per TF (strongest biosample by max
 signal in the enhancer ±2 kb), matching the live code path in the notebook.
 
 Run:
@@ -34,7 +34,6 @@ BIOSAMPLES = [
     "CL:0000625",   # CD8-positive, alpha-beta T cell
     "CL:0000576",   # monocyte
     "CL:0001054",   # CD14-positive monocyte
-    "CL:0000451",   # dendritic cell
 ]
 
 
@@ -119,7 +118,7 @@ def main():
     tf_pred = out.chip_tf
     tf_md = tf_pred.metadata
 
-    # Dedupe per TF: for each TF in the panel that has any returned tracks, keep
+    # Dedup per TF: for each TF in the panel that has any returned tracks, keep
     # the (TF, biosample) row whose max signal inside the enhancer ±2 kb is highest.
     # Matches the notebook's load_ag_live dedup so cache and live agree.
     tf_names = tf_md["transcription_factor"].astype(str).values
@@ -136,7 +135,7 @@ def main():
     items = sorted(best.items(), key=lambda kv: -kv[1][1])
     keep_idx = [v[1][0] for v in items]
     kept     = [k for k, _ in items]
-    print(f"Found {len(kept)} target TF tracks (deduped, by strongest biosample): {kept}")
+    print(f"Found {len(kept)} target TF tracks (dedup, by strongest biosample): {kept}")
     print(f"  (out of {len(tf_md)} total CHIP-TF tracks the model returned)")
     if not kept:
         print("None of the target TFs found. First 30 available TF track names:")
