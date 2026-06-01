@@ -163,7 +163,7 @@ def main():
         "chip_tf_metadata": tf_md_dict,
     }
     mdata.uns["alphagenome_cache"] = cache
-    mdata.write(args.h5mu)
+    mdata.write(args.h5mu, compression="gzip")
     print(f"Wrote refreshed cache to {args.h5mu}")
     print(f"  featured_peak = {peak}")
     print(f"  TFs cached    = {kept}")
