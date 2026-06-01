@@ -4,7 +4,7 @@
 Computes the featured MS4A1 peak the same way the notebook does (paired
 correlation over a ±250 kb TSS window), then caches AlphaGenome CHIP-TF
 predictions for it. Dedups one row per TF (strongest biosample by max
-signal in the enhancer ±2 kb), matching the live code path in the notebook.
+signal in the enhancer ±500 bp), matching the live code path in the notebook.
 
 Run:
     ALPHA_GENOME_API_KEY=<key> python preprocessing/refresh_alphagenome.py \
@@ -123,11 +123,11 @@ def main():
     tf_md = tf_pred.metadata
 
     # Dedup per TF: for each TF in the panel that has any returned tracks, keep
-    # the (TF, biosample) row whose max signal inside the enhancer ±2 kb is highest.
+    # the (TF, biosample) row whose max signal inside the enhancer ±500 bp is highest.
     # Matches the notebook's load_ag_live dedup so cache and live agree.
     tf_names = tf_md["transcription_factor"].astype(str).values
     pos_ctx = np.linspace(int(context_iv.start), int(context_iv.end), tf_pred.values.shape[0])
-    win_mask = (pos_ctx >= start - 2000) & (pos_ctx <= end + 2000)
+    win_mask = (pos_ctx >= start -  500) & (pos_ctx <= end +  500)
     sig_per_row = tf_pred.values[win_mask].max(axis=0)
     best = {}                                       # TF -> (row_index, signal)
     for i, t in enumerate(tf_names):
