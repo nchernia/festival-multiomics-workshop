@@ -3,7 +3,7 @@
 Festival of Genomics workshop: integrating scRNA-seq + scATAC-seq, ~45 minutes.
 Runs entirely in **Google Colab** — no local install, no GPU.
 
-[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration_v2.ipynb)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration.ipynb)
 
 ## What students learn
 
@@ -15,7 +15,7 @@ ArchR (`addPeak2GeneLinks`), and Seurat compute — and it's the analysis that
 
 The workshop is split into two notebooks:
 
-**`workshop_multiomics_integration_v2.ipynb`** — the main ~45-min session:
+**`workshop_multiomics_integration.ipynb`** — the main ~45-min session:
 
 | Part | Tool | Output |
 |---|---|---|
@@ -30,7 +30,7 @@ cell separation → DEG validation). The main notebook consumes the result.
 
 ## For students
 
-[Open the main notebook in Colab](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration_v2.ipynb)
+[Open the main notebook in Colab](https://colab.research.google.com/github/nchernia/festival-multiomics-workshop/blob/main/workshop_multiomics_integration.ipynb)
 and **Runtime → Run all**. Total time: ~5–10 minutes (most of it is the
 `.h5mu` download in the load cell).
 
@@ -42,10 +42,9 @@ any peak you re-target).
 
 ```
 .
-├── workshop_multiomics_integration_v2.ipynb     ← main workshop notebook
-├── workshop_multiomics_integration.ipynb        ← earlier version, kept for reference
+├── workshop_multiomics_integration.ipynb        ← main workshop notebook
 ├── rna_annotation.ipynb                         ← self-paced cell-annotation walkthrough
-├── cell_type_scATAC.png                         ← Part 1 schematic (embedded in v2)
+├── cell_type_scATAC.png                         ← Part 1 schematic (embedded in the notebook)
 ├── preprocessing/
 │   ├── preprocess_pbmc_multiome.py              ← main pipeline (download, QC, MACS3, GTF, save)
 │   ├── cleanup_h5mu.py                          ← one-shot fixer for an existing .h5mu
@@ -162,9 +161,9 @@ MuData
 └── uns
     ├── gene_tss          — per-gene (chrom, TSS, strand) from GENCODE v44;
     │                       defines the ±250 kb candidate window for peak-to-gene
-    └── alphagenome_cache — CHIP-TF predictions for the MS4A1 enhancer (deduped
+    └── alphagenome_cache — CHIP-TF predictions for the MS4A1 enhancer (dedup
                             to one row per TF: the biosample with the strongest
-                            predicted binding signal inside the peak ±2 kb)
+                            predicted binding signal inside the peak ±500 bp)
 ```
 
 Cell types present in `obs['cell_type']` (both modalities, same labels):
