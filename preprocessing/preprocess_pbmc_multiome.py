@@ -313,7 +313,7 @@ def annotate_cells(rna):
 
 
 # ---------------------------------------------------------------------------
-# 6. Per-gene TSS from a GENCODE GTF (no GLUE needed)
+# 6. Per-gene TSS from a GENCODE GTF
 # ---------------------------------------------------------------------------
 GTF_FEATURE_GENE = "gene"
 _ATTR_RE = re.compile(r'(\w+) "([^"]*)"')
@@ -322,8 +322,7 @@ _ATTR_RE = re.compile(r'(\w+) "([^"]*)"')
 def derive_gene_tss(rna_var_names, output_dir):
     """Parse GENCODE GTF (gene-feature lines only), return per-gene TSS dict.
 
-    Replaces the old GLUE-based gene-coordinate step. ~5 minutes for the
-    GENCODE v44 basic annotation, including download.
+    ~5 minutes for the GENCODE v44 basic annotation, including download.
     """
     print("\n--- Deriving per-gene TSS from GENCODE GTF ---")
     gtf_path = os.path.join(output_dir, "gencode.v44.basic.annotation.gtf.gz")

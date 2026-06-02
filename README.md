@@ -82,17 +82,6 @@ Costs:
 ATAC QC thresholds (in `process_atac`): ≥1,000 fragments/cell, TSS enrichment
 ≥7, doublets removed via snapatac2's scrublet.
 
-### Cleaning up an existing .h5mu (no re-preprocessing)
-
-If you already have a `.h5mu` produced by an older pipeline and just want to
-(a) split plasma cells out of the B-cell label and (b) strip GLUE residue, run:
-
-```bash
-python preprocessing/cleanup_h5mu.py --h5mu pbmc_10k_multiome_workshop.h5mu
-```
-
-~1 minute. Output overwrites the input.
-
 ### Post-steps (after the main pipeline)
 
 ```bash
