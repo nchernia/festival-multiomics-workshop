@@ -47,7 +47,6 @@ any peak you re-target).
 ├── cell_type_scATAC.png                         ← Part 1 schematic (embedded in the notebook)
 ├── preprocessing/
 │   ├── preprocess_pbmc_multiome.py              ← main pipeline (download, QC, MACS3, GTF, save)
-│   ├── cleanup_h5mu.py                          ← one-shot fixer for an existing .h5mu
 │   ├── make_pseudobulk_bigwigs.py               ← per-cell-type bigWigs for the IGV view
 │   └── refresh_alphagenome.py                   ← AlphaGenome CHIP-TF cache (needs API key)
 ├── README.md
@@ -82,12 +81,6 @@ Costs:
 
 ATAC QC thresholds (in `process_atac`): ≥1,000 fragments/cell, TSS enrichment
 ≥7, doublets removed via snapatac2's scrublet.
-
-**Note on GLUE.** Earlier versions of this pipeline trained a GLUE model for
-joint embedding (3–5 hours). The workshop's peak-to-gene analysis is paired
-Spearman correlation in a ±250 kb candidate window — it only needs per-gene
-TSS coordinates, which the current pipeline reads directly from the GENCODE
-GTF. GLUE is no longer used.
 
 ### Cleaning up an existing .h5mu (no re-preprocessing)
 
