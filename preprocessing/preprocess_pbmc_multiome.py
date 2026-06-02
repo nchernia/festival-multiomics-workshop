@@ -7,7 +7,7 @@ TSS coordinates directly from a GENCODE GTF, and saves everything as a
 single .h5mu file. A separate post-step (refresh_alphagenome.py) populates
 the AlphaGenome CHIP-TF cache for the MS4A1 enhancer.
 
-GLUE is NOT trained or used here — the workshop notebook's peak-to-gene
+The workshop notebook's peak-to-gene
 analysis is paired Spearman correlation over a ±250 kb candidate window,
 which only needs gene TSS coordinates.
 
